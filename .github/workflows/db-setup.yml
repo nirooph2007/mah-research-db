@@ -1,0 +1,70 @@
+name: DB Setup (DDL / DML / Views / Cursor / Transaction)
+
+on:
+  workflow_dispatch:
+    inputs:
+      step:
+        description: "Which script to run"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - ddl
+          - dml
+          - views
+          - cursor
+          - transaction
+
+jobs:
+  run-db-scripts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mah-research-db/backend
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run DDL setup
+        if: ${{ inputs.step == 'all' || inputs.step == 'ddl' }}
+        run: npm run ddl:setup
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+
+      - name: Run DML seed
+        if: ${{ inputs.step == 'all' || inputs.step == 'dml' }}
+        run: npm run dml:seed
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+
+      - name: Create views
+        if: ${{ inputs.step == 'all' || inputs.step == 'views' }}
+        run: npm run views:create
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+
+      - name: Cursor demo
+        if: ${{ inputs.step == 'all' || inputs.step == 'cursor' }}
+        run: npm run demo:cursor
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+
+      - name: Transaction demo
+        if: ${{ inputs.step == 'all' || inputs.step == 'transaction' }}
+        run: npm run demo:transaction
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          DB_NAME: ${{ secrets.DB_NAME }}
