@@ -17,9 +17,9 @@ async function main() {
   await client.connect();
   const db = client.db(process.env.DB_NAME || "mah_research_db");
 
-  console.log("OPEN CURSOR on papers collection (status = 'submitted' OR 'under_review')\n");
+  console.log("OPEN CURSOR on paper collection (status = 'submitted' OR 'under_review')\n");
 
-  const cursor = db.collection("papers").find(
+  const cursor = db.collection("paper").find(
     { status: { $in: ["submitted", "under_review"] } },
     { projection: { title: 1, status: 1, avgReviewScore: 1 } }
   ).sort({ createdAt: -1 });
