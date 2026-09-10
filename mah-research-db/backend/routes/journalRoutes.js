@@ -13,17 +13,25 @@ router.get("/", async (req, res) => {
 });
 // TEMPORARY DEBUG ROUTE — remove after diagnosing the papers $lookup bug
 router.get("/debug/paper-types", async (req, res) => {
-  const raw = await mongoose.connection.db.collection("papers").find({}).toArray();
-  const info = raw.map((p) => ({
-    _id: p._id.toString(),
-    title: p.title,
-    journalId_raw: p.journalId,
-    journalId_typeofJS: typeof p.journalId,
-    journalId_isObjectId: p.journalId instanceof mongoose.Types.ObjectId,
-    journalId_constructorName: p.journalId && p.journalId.constructor && p.journalId.constructor.name,
-    journalId_toStringResult: p.journalId ? p.journalId.toString() : null,
-  }));
-  res.json(info);
+  const connInfo = {
+    connectionName: mongoose.connection.name,
+    readyState: mongoose.connection.readyState,
+    host: mongoose.connection.host,
+  };
+  const collections = await mongoose.connection.db.listCollections().toArray();
+  const collectionCounts = {};
+  for (const c of collections) {
+    collectionCounts[c.name] = await mongoose.connection.db.collection(c.name).countDocuments();
+  }
+  const rawPapersViaNativeDriver = await mongoose.connection.db.collection("papers").find({}).toArray();
+  const papersViaMongooseModel = await Paper.find({}).lean();
+  res.json({
+    connInfo,
+    collectionCounts,
+    rawPapersViaNativeDriver_count: rawPapersViaNativeDriver.length,
+    papersViaMongooseModel_count: papersViaMongooseModel.length,
+    papersViaMongooseModel_sample: papersViaMongooseModel.slice(0, 2),
+  });
 });
 // JOIN demo: journal + its editorial board + its papers, via $lookup
 router.get("/:id/full", async (req, res) => {
@@ -77,22 +85,4 @@ router.put("/:id", authRequired, requireRole("admin", "superadmin"), async (req,
 });
 // DELETE FROM journals WHERE _id = ?
 router.delete("/:id", authRequired, requireRole("superadmin"), async (req, res) => {
-  await Journal.findByIdAndDelete(req.params.id);
-  await EditorialAssignment.deleteMany({ journalId: req.params.id });
-  res.json({ deleted: true });
-});
-// Editorial board (many-to-many join table) ---------------------------
-router.post("/:id/board", authRequired, requireRole("admin", "superadmin"), async (req, res) => {
-  const { userId, boardRole } = req.body;
-  const assignment = await EditorialAssignment.create({ journalId: req.params.id, userId, boardRole });
-  res.status(201).json(assignment);
-});
-router.get("/:id/board", async (req, res) => {
-  const board = await EditorialAssignment.find({ journalId: req.params.id }).populate("userId", "name email role");
-  res.json(board);
-});
-router.delete("/board/:assignmentId", authRequired, requireRole("admin", "superadmin"), async (req, res) => {
-  await EditorialAssignment.findByIdAndDelete(req.params.assignmentId);
-  res.json({ deleted: true });
-});
-module.exports = router;
+  await
