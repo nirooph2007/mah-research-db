@@ -22,7 +22,7 @@ async function main() {
   }
 
   await db.createCollection("published_papers_view", {
-    viewOn: "papers",
+    viewOn: "paper",
     pipeline: [
       { $match: { status: "published" } },
       {
@@ -48,7 +48,7 @@ async function main() {
     ],
   });
 
-  console.log('View "published_papers_view" created on top of the papers collection.');
+  console.log('View "published_papers_view" created on top of the paper collection.');
   await client.close();
 }
 
