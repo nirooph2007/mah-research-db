@@ -1,5 +1,4 @@
 const express = require("express");
-const mongoose = require("mongoose");
 const Journal = require("../models/Journal");
 const Paper = require("../models/Paper");
 const EditorialAssignment = require("../models/EditorialAssignment");
@@ -10,28 +9,6 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   const journals = await Journal.find().sort({ createdAt: -1 });
   res.json(journals);
-});
-// TEMPORARY DEBUG ROUTE — remove after diagnosing the papers $lookup bug
-router.get("/debug/paper-types", async (req, res) => {
-  const connInfo = {
-    connectionName: mongoose.connection.name,
-    readyState: mongoose.connection.readyState,
-    host: mongoose.connection.host,
-  };
-  const collections = await mongoose.connection.db.listCollections().toArray();
-  const collectionCounts = {};
-  for (const c of collections) {
-    collectionCounts[c.name] = await mongoose.connection.db.collection(c.name).countDocuments();
-  }
-  const rawPapersViaNativeDriver = await mongoose.connection.db.collection("papers").find({}).toArray();
-  const papersViaMongooseModel = await Paper.find({}).lean();
-  res.json({
-    connInfo,
-    collectionCounts,
-    rawPapersViaNativeDriver_count: rawPapersViaNativeDriver.length,
-    papersViaMongooseModel_count: papersViaMongooseModel.length,
-    papersViaMongooseModel_sample: papersViaMongooseModel.slice(0, 2),
-  });
 });
 // JOIN demo: journal + its editorial board + its papers, via $lookup
 router.get("/:id/full", async (req, res) => {
@@ -55,11 +32,9 @@ router.get("/:id/full", async (req, res) => {
     },
     {
       $lookup: {
-        from: "papers",
-        let: { jid: "$_id" },
-        pipeline: [
-          { $match: { $expr: { $eq: [{ $toString: "$journalId" }, { $toString: "$$jid" }] } } },
-        ],
+        from: "paper",
+        localField: "_id",
+        foreignField: "journalId",
         as: "papers",
       },
     },
