@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const Journal = require("../models/Journal");
 const Paper = require("../models/Paper");
 const EditorialAssignment = require("../models/EditorialAssignment");
@@ -9,6 +10,20 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   const journals = await Journal.find().sort({ createdAt: -1 });
   res.json(journals);
+});
+// TEMPORARY DEBUG ROUTE — remove after diagnosing the papers $lookup bug
+router.get("/debug/paper-types", async (req, res) => {
+  const raw = await mongoose.connection.db.collection("papers").find({}).toArray();
+  const info = raw.map((p) => ({
+    _id: p._id.toString(),
+    title: p.title,
+    journalId_raw: p.journalId,
+    journalId_typeofJS: typeof p.journalId,
+    journalId_isObjectId: p.journalId instanceof mongoose.Types.ObjectId,
+    journalId_constructorName: p.journalId && p.journalId.constructor && p.journalId.constructor.name,
+    journalId_toStringResult: p.journalId ? p.journalId.toString() : null,
+  }));
+  res.json(info);
 });
 // JOIN demo: journal + its editorial board + its papers, via $lookup
 router.get("/:id/full", async (req, res) => {
