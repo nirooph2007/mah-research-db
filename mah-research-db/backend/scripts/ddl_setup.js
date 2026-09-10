@@ -67,7 +67,7 @@ async function main() {
 
   await createCollectionSafe(
     db,
-    "papers",
+    "paper",
     {
       bsonType: "object",
       required: ["title", "abstract", "authorId", "journalId", "status"],
@@ -130,7 +130,7 @@ async function main() {
     [{ key: { userId: 1 } }]
   );
 
-  console.log("\nDDL setup complete: 6 collections ready (users, journals, papers, reviews, editorialassignments, notifications).");
+  console.log("\nDDL setup complete: 6 collections ready (users, journals, paper, reviews, editorialassignments, notifications).");
   await client.close();
 }
 
