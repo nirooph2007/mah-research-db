@@ -85,4 +85,22 @@ router.put("/:id", authRequired, requireRole("admin", "superadmin"), async (req,
 });
 // DELETE FROM journals WHERE _id = ?
 router.delete("/:id", authRequired, requireRole("superadmin"), async (req, res) => {
-  await
+  await Journal.findByIdAndDelete(req.params.id);
+  await EditorialAssignment.deleteMany({ journalId: req.params.id });
+  res.json({ deleted: true });
+});
+// Editorial board (many-to-many join table) ---------------------------
+router.post("/:id/board", authRequired, requireRole("admin", "superadmin"), async (req, res) => {
+  const { userId, boardRole } = req.body;
+  const assignment = await EditorialAssignment.create({ journalId: req.params.id, userId, boardRole });
+  res.status(201).json(assignment);
+});
+router.get("/:id/board", async (req, res) => {
+  const board = await EditorialAssignment.find({ journalId: req.params.id }).populate("userId", "name email role");
+  res.json(board);
+});
+router.delete("/board/:assignmentId", authRequired, requireRole("admin", "superadmin"), async (req, res) => {
+  await EditorialAssignment.findByIdAndDelete(req.params.assignmentId);
+  res.json({ deleted: true });
+});
+module.exports = router;
